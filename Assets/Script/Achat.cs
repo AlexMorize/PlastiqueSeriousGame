@@ -5,13 +5,15 @@ using UnityEngine;
 public class Achat : Objet
 {
     public float SatisfactionGénérée, Prix;
+    public int Catégorie;
     public List<Déchet> DéchetGénérés;
 
-    private void OnMouseDown()
+    private void OnMouseUp()
     {
         if (GameManager.TenterAchat(Prix))
         {
             GameManager.AddSatisfaction(SatisfactionGénérée);
+            GameManager.GenerateDéchet(DéchetGénérés);
         }
     }
 

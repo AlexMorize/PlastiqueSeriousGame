@@ -6,10 +6,12 @@ using UnityEngine.UI;
 public class GameManager : MonoBehaviour
 {
     public float maxPointSatisfaction = 100, VitesseReductionSatisfaction = 5, MaxPollution = 100;
+    public int MaxDéchets;
     public float Argent = 100;
+    
 
     public Image BarreSatisfaction, BarrePollution;
-    public Text ArgentText, SatisfactionText;
+    public Text ArgentText, SatisfactionText, TextNbDéchet;
 
     private static GameManager instance;
     private float currentSatisfaction;
@@ -17,7 +19,7 @@ public class GameManager : MonoBehaviour
 
     public static Déchet ActualDrag;
     public static Poubelle CurrentPoubelle;
-
+    List<Déchet> CurrentDéchets = new List<Déchet>();
 
     // Start is called before the first frame update
     void Start()
@@ -25,10 +27,16 @@ public class GameManager : MonoBehaviour
         instance = this;
         ArgentText.text = Argent.ToString("0.00") + " €";
         currentSatisfaction = maxPointSatisfaction;
+        instance.TextNbDéchet.text = CurrentDéchets.Count + " / " + MaxDéchets;
     }
 
     public static bool TenterAchat(float prix)
     {
+        if(instance.CurrentDéchets.Count>=instance.MaxDéchets)
+        {
+            PopUp.DoErrorColor();
+            return false;
+        }
         if (instance.Argent >= prix)
         {
             instance.Argent -= prix;
@@ -47,6 +55,27 @@ public class GameManager : MonoBehaviour
     {
         instance.currentSatisfaction += satisfaction;
         
+    }
+
+    public static void GenerateDéchet(List<Déchet> déchets)
+    {
+        foreach(Déchet d in déchets)
+        {
+            GameObject go = Instantiate(d.gameObject);
+            instance.CurrentDéchets.Add(go.GetComponent<Déchet>());
+        }
+        instance.SortDéchet();
+        
+    }
+
+    void SortDéchet()
+    {
+        instance.TextNbDéchet.text = instance.CurrentDéchets.Count + " / " + instance.MaxDéchets;
+        Vector3 OriginalPos = new Vector3(-40, -1);
+        for(int i = 0;i<CurrentDéchets.Count;i++)
+        {
+            CurrentDéchets[i].gameObject.transform.position = OriginalPos + Vector3.right * i;
+        }
     }
 
     // Update is called once per frame
@@ -82,9 +111,11 @@ public class GameManager : MonoBehaviour
                     {
                         currentPollution += ActualDrag.polutionEngendrée * 2 + 1;
                     }
+                    CurrentDéchets.Remove(ActualDrag);
                     Destroy(ActualDrag.gameObject);
                 }                
-                ActualDrag = null;               
+                ActualDrag = null;
+                SortDéchet();
             }
         }
     }
