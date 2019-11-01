@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,6 +21,9 @@ public class GameManager : MonoBehaviour
     public static Déchet ActualDrag;
     public static Poubelle CurrentPoubelle;
     List<Déchet> CurrentDéchets = new List<Déchet>();
+    List<List<Achat>> achatsParCategorie;
+    List<GameObject> achatAffiché = new List<GameObject>();
+
 
     // Start is called before the first frame update
     void Start()
@@ -28,6 +32,58 @@ public class GameManager : MonoBehaviour
         ArgentText.text = Argent.ToString("0.00") + " €";
         currentSatisfaction = maxPointSatisfaction;
         instance.TextNbDéchet.text = CurrentDéchets.Count + " / " + MaxDéchets;
+        GetAllAchat();
+        GetNextAchat();
+    }
+
+    void GetAllAchat()
+    {
+        Dictionary<int, List<Achat>> DictioAchatParCatégorie = new Dictionary<int, List<Achat>>();
+        List<Achat> LesAchats = new List<Achat>();
+        LesAchats.AddRange(Resources.LoadAll("Achats", typeof(Achat)).Cast<Achat>().ToArray());
+        foreach(Achat unAchat in LesAchats)
+        {
+            if(DictioAchatParCatégorie.ContainsKey(unAchat.Catégorie))
+            {
+                DictioAchatParCatégorie[unAchat.Catégorie].Add(unAchat);
+            }else
+            {
+                DictioAchatParCatégorie.Add(unAchat.Catégorie, new List<Achat>() { unAchat });
+            }
+        }
+        achatsParCategorie = new List<List<Achat>>();
+        foreach(List<Achat> la in DictioAchatParCatégorie.Values)
+        {
+            achatsParCategorie.Add(la);
+        }
+        
+    }
+
+    List<Achat> GetAchatFromOneRandomCategorie()
+    {
+        int selectedCat = Random.Range(0, achatsParCategorie.Count);
+        List<Achat> achats = achatsParCategorie[selectedCat];
+        achatsParCategorie.Remove(achats);
+        return achats;
+    }
+
+    public static void GetNextAchat()
+    {
+        foreach(GameObject go in instance.achatAffiché)
+        {
+            Destroy(go);
+        }
+        instance.achatAffiché.Clear();
+
+        List<Achat> listeAchat = instance.GetAchatFromOneRandomCategorie();
+        Vector3 OriginalPosition = new Vector3(-32, 2) - Vector3.right * (listeAchat.Count-1);
+
+        for(int i = 0;i<listeAchat.Count;i++)
+        {
+            GameObject unAchat = Instantiate(listeAchat[i].gameObject);
+            unAchat.transform.position = OriginalPosition + Vector3.right * 2 * i;
+            instance.achatAffiché.Add(unAchat);
+        }
     }
 
     public static bool TenterAchat(float prix)
