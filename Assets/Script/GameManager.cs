@@ -9,10 +9,15 @@ public class GameManager : MonoBehaviour
     public float maxPointSatisfaction = 100, VitesseReductionSatisfaction = 5, MaxPollution = 100;
     public int MaxDéchets;
     public float Argent = 100;
-    
+
 
     public Image BarreSatisfaction, BarrePollution;
     public Text ArgentText, SatisfactionText, TextNbDéchet;
+    public GameObject MenuFin;
+    public Text TexteFin;
+    public string TexteVictoire, TexteDefaitePollution, TexteDefaiteSatisfaction;
+    public Image TerreDétruite, ImageNoirPollution;
+
 
     private static GameManager instance;
     private float currentSatisfaction;
@@ -23,6 +28,7 @@ public class GameManager : MonoBehaviour
     List<Déchet> CurrentDéchets = new List<Déchet>();
     List<List<Achat>> achatsParCategorie;
     List<GameObject> achatAffiché = new List<GameObject>();
+    bool AchatClear = false;
 
 
     // Start is called before the first frame update
@@ -74,6 +80,12 @@ public class GameManager : MonoBehaviour
             Destroy(go);
         }
         instance.achatAffiché.Clear();
+
+        if(instance.achatsParCategorie.Count==0)
+        {
+            instance.AchatClear = true;
+            return;
+        }
 
         List<Achat> listeAchat = instance.GetAchatFromOneRandomCategorie();
         Vector3 OriginalPosition = new Vector3(-32, 2) - Vector3.right * (listeAchat.Count-1);
@@ -134,10 +146,37 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    void VerifyVictory()
+    {
+        bool isEnd = false;
+        if (CurrentDéchets.Count == 0 && AchatClear)
+        {
+            TexteFin.text = TexteVictoire;
+            isEnd = true;
+        }
+        if (currentSatisfaction == 0)
+        {
+            TexteFin.text = TexteDefaiteSatisfaction;
+            isEnd = true;
+        }
+        if(currentPollution >= MaxPollution)
+        {
+            TexteFin.text = TexteDefaitePollution;
+            TerreDétruite.enabled = true;
+            isEnd = true;
+        }
+        
+        if(isEnd)
+        {
+            MenuFin.SetActive(true);
+            this.enabled = false;
+        }
+    }
+
     // Update is called once per frame
     void Update()
     {
-
+        VerifyVictory();
         currentSatisfaction -= VitesseReductionSatisfaction * Time.deltaTime;
         currentSatisfaction = Mathf.Clamp(currentSatisfaction, 0, maxPointSatisfaction);
         BarreSatisfaction.rectTransform.localScale = new Vector3(currentSatisfaction / maxPointSatisfaction, 1, 1);
@@ -167,6 +206,8 @@ public class GameManager : MonoBehaviour
                     {
                         currentPollution += ActualDrag.polutionEngendrée * 2 + 1;
                     }
+                    ImageNoirPollution.color = new Color(0, 0, 0, currentPollution / MaxPollution * .8f);
+
                     CurrentDéchets.Remove(ActualDrag);
                     Destroy(ActualDrag.gameObject);
                 }                
