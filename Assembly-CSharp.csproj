@@ -66,6 +66,7 @@
     <Compile Include="Assets\Script\Achat.cs" />
     <Compile Include="Assets\Script\Déchet.cs" />
     <Compile Include="Assets\Script\GameManager.cs" />
+    <Compile Include="Assets\Script\LevelSelector.cs" />
     <Compile Include="Assets\Script\Objet.cs" />
     <Compile Include="Assets\Script\PopUp.cs" />
     <Compile Include="Assets\Script\Poubelle.cs" />
