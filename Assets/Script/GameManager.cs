@@ -2,26 +2,34 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering.PostProcessing;
 using UnityEngine.UI;
+
 
 public class GameManager : MonoBehaviour
 {
-    public float maxPointSatisfaction = 100, VitesseReductionSatisfaction = 5, MaxPollution = 100;
+    public float maxTemps = 100, VitesseReductionTemps = 5, MaxPollution = 100;
     public int MaxDéchets;
     public float Argent = 100;
-
+    public PostProcessProfile postProcess;
+    public ColorGrading grading;
+    public Button btn_Pause, btn_Pause2;
 
     public Image BarreSatisfaction, BarrePollution;
     public Text ArgentText, SatisfactionText, TextNbDéchet;
+    public Text PopUpTemps, PopUpArgent, PopUpPollution;
     public GameObject MenuFin;
     public Text TexteFin;
     public string TexteVictoire, TexteDefaitePollution, TexteDefaiteSatisfaction;
     public Image TerreDétruite, ImageNoirPollution;
+    public Canvas MenuPause;
+    
 
 
-    private static GameManager instance;
+    public static GameManager instance;
     private float currentSatisfaction;
     private float currentPollution;
+    public static bool isPaused = false;
 
     public static Déchet ActualDrag;
     public static Poubelle CurrentPoubelle;
@@ -34,12 +42,46 @@ public class GameManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        isPaused = false;
         instance = this;
         ArgentText.text = Argent.ToString("0.00") + " €";
-        currentSatisfaction = maxPointSatisfaction;
+        currentSatisfaction = maxTemps;
         instance.TextNbDéchet.text = CurrentDéchets.Count + " / " + MaxDéchets;
         GetAllAchat();
         GetNextAchat();
+        grading = postProcess.GetSetting<ColorGrading>();
+        PopUpArgent.enabled = PopUpPollution.enabled = PopUpTemps.enabled = false;
+        MenuPause.enabled = false;
+        btn_Pause.onClick.AddListener(switchPause);
+        btn_Pause2.onClick.AddListener(switchPause);
+    }
+
+    void switchPause()
+    {
+        isPaused = !isPaused;
+        if(isPaused)
+        {
+            Time.timeScale = 0;
+        }else
+        {
+            Time.timeScale = 1;
+        }
+        MenuPause.enabled = isPaused;
+    }
+
+    void effacerPopUpTemps()
+    {
+        PopUpTemps.enabled = false;
+    }
+
+    void effacerPopUpPollution()
+    {
+        PopUpPollution.enabled = false;
+    }
+
+    void effacerPopUpArgent()
+    {
+        PopUpArgent.enabled = false;
     }
 
     void GetAllAchat()
@@ -88,12 +130,12 @@ public class GameManager : MonoBehaviour
         }
 
         List<Achat> listeAchat = instance.GetAchatFromOneRandomCategorie();
-        Vector3 OriginalPosition = new Vector3(-32, 2) - Vector3.right * (listeAchat.Count-1);
+        Vector3 OriginalPosition = new Vector3(-32, 2) - Vector3.right * (listeAchat.Count-1) * 1.5f;
 
         for(int i = 0;i<listeAchat.Count;i++)
         {
             GameObject unAchat = Instantiate(listeAchat[i].gameObject);
-            unAchat.transform.position = OriginalPosition + Vector3.right * 2 * i;
+            unAchat.transform.position = OriginalPosition + Vector3.right * 3 * i;
             instance.achatAffiché.Add(unAchat);
         }
     }
@@ -142,7 +184,7 @@ public class GameManager : MonoBehaviour
         Vector3 OriginalPos = new Vector3(-40, -1);
         for(int i = 0;i<CurrentDéchets.Count;i++)
         {
-            CurrentDéchets[i].gameObject.transform.position = OriginalPos + Vector3.right * i;
+            CurrentDéchets[i].gameObject.transform.position = OriginalPos + Vector3.right * 1.5f * i;
         }
     }
 
@@ -176,11 +218,12 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (GameManager.isPaused) return;
         VerifyVictory();
-        currentSatisfaction -= VitesseReductionSatisfaction * Time.deltaTime;
-        currentSatisfaction = Mathf.Clamp(currentSatisfaction, 0, maxPointSatisfaction);
-        BarreSatisfaction.rectTransform.localScale = new Vector3(currentSatisfaction / maxPointSatisfaction, 1, 1);
-        instance.SatisfactionText.text = "Satisfaction " + instance.currentSatisfaction.ToString("0") + "/" + instance.maxPointSatisfaction.ToString("0");
+        currentSatisfaction -= VitesseReductionTemps * Time.deltaTime;
+        currentSatisfaction = Mathf.Clamp(currentSatisfaction, 0, maxTemps);
+        BarreSatisfaction.rectTransform.localScale = new Vector3(currentSatisfaction / maxTemps, 1, 1);
+        instance.SatisfactionText.text = "Temps " + instance.currentSatisfaction.ToString("0") + "s";/* + "/" + instance.maxTemps.ToString("0");*/
 
         currentPollution = Mathf.Clamp(currentPollution, 0, MaxPollution);
         BarrePollution.rectTransform.localScale = new Vector3(currentPollution / MaxPollution, 1, 1);
@@ -201,12 +244,26 @@ public class GameManager : MonoBehaviour
                     if (CurrentPoubelle.Type == ActualDrag.PoubelleAffilié)
                     {
                         currentPollution += ActualDrag.polutionEngendrée;
+                        PopUpPollution.enabled = true;
+                        PopUpPollution.text = "+" + ActualDrag.polutionEngendrée + "%";
+                        CancelInvoke("effacerPopUpPollution");
+                        Invoke("effacerPopUpPollution", 2);
                     }
                     else
                     {
                         currentPollution += ActualDrag.polutionEngendrée * 2 + 1;
+                        PopUpPollution.enabled = true;
+                        PopUpPollution.text = "+" + (ActualDrag.polutionEngendrée * 2 + 1) + "%";
+                        CancelInvoke("effacerPopUpPollution");
+                        Invoke("effacerPopUpPollution", 2);
                     }
-                    ImageNoirPollution.color = new Color(0, 0, 0, currentPollution / MaxPollution * .8f);
+                    ImageNoirPollution.color = new Color(0, 0, 0, currentPollution / MaxPollution * 1);
+                    FloatParameter satu = new FloatParameter();
+                    satu.Override(-100 * (currentPollution / MaxPollution));
+                    //satu.value = -100 * (currentPollution / MaxPollution);
+                    grading.saturation = satu;
+                    Debug.Log(satu.value);
+                        
 
                     CurrentDéchets.Remove(ActualDrag);
                     Destroy(ActualDrag.gameObject);

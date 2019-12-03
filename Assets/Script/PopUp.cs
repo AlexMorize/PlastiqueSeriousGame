@@ -25,7 +25,10 @@ public class PopUp : MonoBehaviour
         Instance.canvas.enabled = true;
         Instance.MessageText.text = message;
         Instance.NomText.text = nom;
-        Instance.transform.position = cam.ScreenToWorldPoint(Input.mousePosition);
+        Vector3 wantedPosition = cam.ScreenToWorldPoint(Input.mousePosition);
+        if (wantedPosition.x > -28.5f) wantedPosition.x = -28.5f;
+        Instance.transform.position = wantedPosition;
+
     }
 
     void ResetErrorColor()

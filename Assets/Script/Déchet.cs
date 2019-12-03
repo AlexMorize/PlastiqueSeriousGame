@@ -10,6 +10,7 @@ public class Déchet : Objet
 
     protected override void OnMouseOver()
     {
+        if (GameManager.isPaused) return;
         if (GameManager.ActualDrag) return;
 
         string message = "Polution: +" + polutionEngendrée.ToString() + " %" + System.Environment.NewLine + System.Environment.NewLine +
@@ -21,6 +22,7 @@ public class Déchet : Objet
 
     void OnMouseDown()
     {
+        if (GameManager.isPaused) return;
         collider.enabled = false;
         PopUp.Hide();
         GameManager.ActualDrag = this;
@@ -28,12 +30,15 @@ public class Déchet : Objet
 
     private void Start()
     {
-        collider = GetComponent<Collider2D>();
+        collider = GetComponent<BoxCollider2D>();
+        float maxSize = collider.bounds.size.x > collider.bounds.size.y ? collider.bounds.size.x : collider.bounds.size.y;
+        transform.localScale = transform.localScale / maxSize * 1.5f;
+
     }
 
 }
 
 public enum ZoneDeDechet
 {
-    Générale, Tri, Déchetterie
+    Générale, Tri, Déchetterie, Collecte
 }
